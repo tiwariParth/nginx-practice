@@ -1,0 +1,30 @@
+# Define the number of worker processes
+worker_processes 1;
+
+events {
+    # Set the maximum number of simultaneous connections that can be opened by a worker process
+    worker_connections 1024;
+}
+
+http {
+    # Include MIME types definitions
+    include mime.types;
+
+    upstream nodejs_cluster {
+        # Define load balancing method and backend servers
+        least_conn;
+        server 127.0.0.1:3001;
+        server 127.0.0.1:3002;
+        server 127.0.0.1:3003;
+    }
+
+    server {
+        # Listen on port 8080
+        listen 8080;
+        # Define server name
+        server_name localhost;
+        location / {
+            # Define location block for root URL
+        }
+    }
+}
