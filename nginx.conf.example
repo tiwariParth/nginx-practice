@@ -19,12 +19,33 @@ http {
     }
 
     server {
-        # Listen on port 8080
-        listen 8080;
+        # Listen on port 443 with SSL
+        listen 443 ssl;
         # Define server name
         server_name localhost;
+
+        # SSL certificate and key
+        ssl_certificate /home/parthtiwari/nginx-certs/nginx-selfsigned.crt;
+        ssl_certificate_key /home/parthtiwari/nginx-certs/nginx-selfsigned.key;
+
         location / {
-            # Define location block for root URL
+            # Proxy pass to the upstream nodejs_cluster
+            proxy_pass http://nodejs_cluster;
+            # Set headers for the proxied request
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;		
+        }
+    }
+
+    server {
+        # Listen on port 80
+        listen 80;
+        # Define server name
+        server_name localhost;
+
+        location / {
+            # Redirect all HTTP requests to HTTPS
+            return 301 https://$host$request_uri;
         }
     }
 }
