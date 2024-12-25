@@ -1,50 +1,77 @@
-# Define the number of worker processes
+# SECTION 1: BASIC NGINX PROCESS CONFIGURATION
+# Sets how many worker processes NGINX will run
+# For beginners, 1 is fine for development/learning
 worker_processes 1;
 
+# SECTION 2: CONNECTION PROCESSING CONFIGURATION
 events {
-    # Set the maximum number of simultaneous connections that can be opened by a worker process
+    # Maximum number of connections each worker process can handle simultaneously
+    # 1024 is a good default value for learning/development
     worker_connections 1024;
 }
 
+# SECTION 3: MAIN HTTP CONFIGURATION BLOCK
+# This section contains all HTTP-related directives
 http {
-    # Include MIME types definitions
+    # Includes the file that maps file extensions to MIME types
+    # This helps browsers understand what type of content they're receiving
     include mime.types;
 
+    # SECTION 4: LOAD BALANCER CONFIGURATION
+    # Defines a group of servers that will share the load
     upstream nodejs_cluster {
-        # Define load balancing method and backend servers
+        # Determines how NGINX distributes requests among servers
+        # least_conn: sends request to server with fewest active connections
         least_conn;
-        server 127.0.0.1:3001;
-        server 127.0.0.1:3002;
-        server 127.0.0.1:3003;
+
+        # List of backend servers (your Node.js applications)
+        # These are running on your local machine (127.0.0.1) on different ports
+        server 127.0.0.1:3001;  # First Node.js app instance
+        server 127.0.0.1:3002;  # Second Node.js app instance
+        server 127.0.0.1:3003;  # Third Node.js app instance
     }
 
+    # SECTION 5: HTTPS SERVER CONFIGURATION
+    # This server block handles all HTTPS (secure) traffic
     server {
-        # Listen on port 443 with SSL
+        # Listen for HTTPS connections on port 443
         listen 443 ssl;
-        # Define server name
+        
+        # What domain name this server block should respond to
+        # localhost is used for local development
         server_name localhost;
 
-        # SSL certificate and key
+        # SSL Certificate Configuration
+        # Paths to your SSL certificate and private key
         ssl_certificate /home/parthtiwari/nginx-certs/nginx-selfsigned.crt;
         ssl_certificate_key /home/parthtiwari/nginx-certs/nginx-selfsigned.key;
 
+        # Configuration for all requests to the root path (/)
         location / {
-            # Proxy pass to the upstream nodejs_cluster
+            # Forward requests to the nodejs_cluster defined above
             proxy_pass http://nodejs_cluster;
-            # Set headers for the proxied request
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;		
+            
+            # Set important headers for proxied requests
+            # Ensures proper communication between client and backend servers
+            proxy_set_header Host $host;                 # Passes the original host header
+            proxy_set_header X-Real-IP $remote_addr;     # Passes the client's real IP
         }
     }
 
+    # SECTION 6: HTTP SERVER CONFIGURATION
+    # This server block handles all HTTP (non-secure) traffic
     server {
-        # Listen on port 80
+        # Listen for HTTP connections on port 80
         listen 80;
-        # Define server name
+        
+        # Domain name this server block responds to
         server_name localhost;
 
+        # Configuration for all HTTP requests
         location / {
-            # Redirect all HTTP requests to HTTPS
+            # Redirect all HTTP traffic to HTTPS
+            # 301 means permanent redirect
+            # $host$request_uri maintains the original request path
             return 301 https://$host$request_uri;
         }
     }
